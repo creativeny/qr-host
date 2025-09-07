@@ -14,14 +14,8 @@ export default defineConfig({
     sourcemap: true,
     // Target modern browsers that support ES modules
     target: 'es2015',
-    // Minify for production
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: false, // Keep console.log for QR debugging
-        drop_debugger: true
-      }
-    }
+    // Use esbuild for minification (built-in, no extra dependencies)
+    minify: 'esbuild'
   },
 
   // Development server configuration

@@ -1,5 +1,6 @@
 {
   "name": "qr-host",
+  "homepage": "https://creativeny.github.io/qr-host",
   "private": true,
   "version": "0.0.0",
   "type": "module",
