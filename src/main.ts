@@ -44,7 +44,7 @@ class QRScanner {
 
     // Initialize window property
     window.scannedQRData = null
-    console.log('🔄 Window.scannedQRData initialized:', window.scannedQRData)
+    console.log('🔄 Window.scannedQRData initialized to null')
 
     // Start scanning immediately
     this.startScanning()
@@ -52,8 +52,6 @@ class QRScanner {
 
   private async startScanning() {
     try {
-      console.log('📷 Requesting camera access...')
-
       // Request camera access
       this.stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -63,13 +61,10 @@ class QRScanner {
         }
       })
 
-      console.log('✅ Camera access granted, setting up video stream...')
-
       this.video.srcObject = this.stream
       this.video.play()
 
       this.scanning = true
-      console.log('🎥 Video stream started, beginning scan loop...')
 
       // Start scanning loop
       this.scanLoop()
@@ -107,27 +102,23 @@ class QRScanner {
           })
 
         if (code) {
-          // Only update if the QR data has changed
-          if (code.data !== this.lastQrData) {
-            this.lastQrData = code.data
-            this.displayQrData(code.data)
-            this.showQrDetectedState()
+          // Update on every successful detection for more frequent updates
+          this.lastQrData = code.data
+          this.displayQrData(code.data)
+          this.showQrDetectedState()
 
-            // Push to window object in real-time
+            // Push to window object on every detection (more frequent updates)
             window.scannedQRData = code.data
-            console.log('📤 Pushed to window.scannedQRData:', window.scannedQRData)
-
-            console.log('✅ QR Code Detected:', {
+            console.log('📤 Data sent to window.scannedQRData:', {
               data: code.data,
-              version: code.version,
-              location: code.location
+              timestamp: new Date().toISOString(),
+              length: code.data.length
             })
 
-            // Dispatch custom event with QR code data
-            window.dispatchEvent(new CustomEvent('qr-detected', {
-              detail: { data: code.data, version: code.version, location: code.location }
-            }))
-          }
+          // Dispatch custom event with QR code data
+          window.dispatchEvent(new CustomEvent('qr-detected', {
+            detail: { data: code.data, version: code.version, location: code.location }
+          }))
         } else {
           // Clear QR detected state if no QR is found
           this.clearQrDetectedState()
@@ -135,13 +126,10 @@ class QRScanner {
           // Clear window property if no QR is detected
           if (this.lastQrData) {
             window.scannedQRData = null
-            console.log('🗑️ Cleared window.scannedQRData:', window.scannedQRData)
-          }
-
-          // Debug: occasionally log that we're scanning but no QR found
-          if (Math.random() < 0.01) { // Log ~1% of frames
-            console.log('🔍 Scanning... no QR code detected')
-            console.log('📊 Current window.scannedQRData state:', window.scannedQRData)
+            console.log('🗑️ Window.scannedQRData cleared (no QR detected)', {
+              timestamp: new Date().toISOString(),
+              previousData: this.lastQrData
+            })
           }
 
           // Clear overlay if no QR code is detected for a while
@@ -173,7 +161,7 @@ class QRScanner {
     // Truncate data to 25 characters and add ellipsis if needed
     const truncatedData = data.length > 25 ? data.substring(0, 25) + '...' : data
 
-    // Display the QR data
+    // Display the QR data (update on every detection)
     this.overlay.textContent = truncatedData
     this.overlay.classList.remove('error')
     this.overlay.classList.add('visible')
@@ -190,7 +178,10 @@ class QRScanner {
       clearTimeout(this.qrDetectedTimeout)
     }
 
-    // Add QR detected class
+    // Reset and add QR detected class for fresh animation on every detection
+    this.scannerContainer.classList.remove('qr-detected')
+    // Force reflow to restart animation
+    void this.scannerContainer.offsetWidth
     this.scannerContainer.classList.add('qr-detected')
 
     // Remove the class after 2 seconds
